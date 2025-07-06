@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TRIBAL Admin Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-6 font-sans">
+
+  <h1 class="text-3xl font-bold mb-6">📊 TRIBAL Lead Dashboard</h1>
+
+  <!-- Filters -->
+  <div class="flex flex-col sm:flex-row gap-4 mb-6">
+    <input id="searchInput" type="text" placeholder="Search by name/email/phone" class="px-4 py-2 rounded bg-gray-800 text-white border border-gray-600 w-full sm:w-1/2" />
+    <input id="minScoreInput" type="number" placeholder="Min Score" class="px-4 py-2 rounded bg-gray-800 text-white border border-gray-600 w-full sm:w-1/4" />
+    <div class="flex gap-2">
+      <button onclick="loadLeads()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white font-semibold">Apply</button>
+      <button onclick="exportCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-white font-semibold">Export CSV</button>
+    </div>
+  </div>
+
+  <!-- Lead Table -->
+  <div class="overflow-auto rounded-lg shadow-lg">
+    <table class="min-w-full bg-gray-800 text-sm text-left">
+      <thead class="bg-gray-700 uppercase text-gray-300">
+        <tr>
+          <th class="px-4 py-3 cursor-pointer" onclick="sortTable('name')">Name</th>
+          <th class="px-4 py-3 cursor-pointer" onclick="sortTable('email')">Email</th>
+          <th class="px-4 py-3 cursor-pointer" onclick="sortTable('phone')">Phone</th>
+          <th class="px-4 py-3">Budget</th>
+          <th class="px-4 py-3">Timeline</th>
+          <th class="px-4 py-3">Interest</th>
+          <th class="px-4 py-3 cursor-pointer" onclick="sortTable('score')">Score</th>
+          <th class="px-4 py-3">Date</th>
+        </tr>
+      </thead>
+      <tbody id="leadsTableBody" class="text-gray-100">
+        <!-- Leads will be injected here -->
+      </tbody>
+    </table>
+  </div>
+
+  <script>
+    let allLeads = [];
+    let sortField = 'score';
+    let sortAsc = false;
+
+    function filterLeads(leads) {
+      const search = document.getElementById("searchInput").value.toLowerCase();
+      const minScore = parseInt(document.getElementById("minScoreInput").value || "0");
+
+      return leads.filter(lead =>
+        (lead.name || "").toLowerCase().includes(search) ||
+        (lead.email || "").toLowerCase().includes(search) ||
+        (lead.phone || "").toLowerCase().includes(search)
+      ).filter(lead => lead.score >= minScore);
+    }
+
+    function sortTable(field) {
+      if (sortField === field) sortAsc = !sortAsc;
+      else {
+        sortField = field;
+        sortAsc = true;
+      }
+      renderTable();
+    }
+
+    function copyToClipboard(value) {
+      navigator.clipboard.writeText(value);
+      alert(`Copied: ${value}`);
+    }
+
+    function exportCSV() {
+      const leads = filterLeads(allLeads);
+      const rows = [
+        ["Name", "Email", "Phone", "Budget", "Timeline", "Interest", "Score", "Date"]
+      ];
+      leads.forEach(lead => {
+        rows.push([
+          lead.name || "",
+          lead.email || "",
+          lead.phone || "",
+          lead.budget || "",
+          lead.timeline || "",
+          lead.interest || "",
+          lead.score,
+          new Date(lead.timestamp).toLocaleString()
+        ]);
+      });
+      const csvContent = rows.map(e => e.map(v => `"${v}"`).join(",")).join("\n");
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'leads.csv';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function renderTable() {
+      const tbody = document.getElementById('leadsTableBody');
+      tbody.innerHTML = "";
+
+      const filtered = filterLeads(allLeads);
+      const sorted = filtered.sort((a, b) => {
+        if (sortAsc) return (a[sortField] || "").toString().localeCompare((b[sortField] || "").toString(), undefined, { numeric: true });
+        return (b[sortField] || "").toString().localeCompare((a[sortField] || "").toString(), undefined, { numeric: true });
+      });
+
+      sorted.forEach((lead, index) => {
+        let scoreColor = 'text-white';
+        if (lead.score >= 100) scoreColor = 'text-green-400 font-bold';
+        else if (lead.score >= 70) scoreColor = 'text-yellow-400';
+        else scoreColor = 'text-red-400';
+
+        const row = document.createElement('tr');
+        row.classList.add("cursor-pointer", "hover:bg-gray-700");
+
+        row.innerHTML = `
+          <td class="px-4 py-2">${lead.name || ""}</td>
+          <td class="px-4 py-2">
+            ${lead.email || ""}
+            <button onclick="event.stopPropagation(); copyToClipboard('${lead.email || ""}')" class="ml-2 text-blue-400 hover:text-blue-200">📋</button>
+            <a href="mailto:${lead.email}" onclick="event.stopPropagation();" class="ml-2 text-blue-500 underline">✉️</a>
+          </td>
+          <td class="px-4 py-2">
+            ${lead.phone || ""}
+            <button onclick="event.stopPropagation(); copyToClipboard('${lead.phone || ""}')" class="ml-2 text-blue-400 hover:text-blue-200">📋</button>
+            <a href="sms:${lead.phone}" onclick="event.stopPropagation();" class="ml-2 text-blue-500 underline">📱</a>
+          </td>
+          <td class="px-4 py-2">${lead.budget || ""}</td>
+          <td class="px-4 py-2">${lead.timeline || ""}</td>
+          <td class="px-4 py-2">${lead.interest || ""}</td>
+          <td class="px-4 py-2 ${scoreColor}">${lead.score}</td>
+          <td class="px-4 py-2 text-gray-400">${new Date(lead.timestamp).toLocaleString()}</td>
+        `;
+
+        row.addEventListener('click', () => {
+          alert(`
+Name: ${lead.name}
+Email: ${lead.email}
+Phone: ${lead.phone}
+Budget: ${lead.budget}
+Timeline: ${lead.timeline}
+Interest: ${lead.interest}
+Score: ${lead.score}
+Submitted: ${new Date(lead.timestamp).toLocaleString()}
+
+${lead.message ? "AI Message:\n" + lead.message : ""}
+          `.trim());
+        });
+
+        tbody.appendChild(row);
+      });
+    }
+
+    async function loadLeads() {
+      const res = await fetch('http://127.0.0.1:8000/leads');
+      allLeads = await res.json();
+      renderTable();
+    }
+
+    loadLeads();
+  </script>
+</body>
+</html>

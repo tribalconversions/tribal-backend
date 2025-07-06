@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TRIBAL FORM</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-black flex items-center justify-center min-h-screen">
+  <form id="leadForm" class="bg-gray-900 p-8 rounded-lg shadow-xl space-y-4 w-full max-w-lg text-white relative">
+    <h1 class="text-3xl font-bold mb-4 text-yellow-400">TRIBAL Lead Form</h1>
+
+    <input type="text" name="name" placeholder="Enter your full name" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white" />
+    <input type="email" name="email" placeholder="Your best email address" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white" />
+    <input type="tel" name="phone" placeholder="Phone number we can reach you at" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white" />
+
+    <select name="budget" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white">
+      <option value="">What's your budget?</option>
+      <option value="<100k">Less than $100k</option>
+      <option value="100k-500k">$100k–$500k</option>
+      <option value="500k+">$500k+</option>
+    </select>
+
+    <select name="timeline" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white">
+      <option value="">How soon are you looking to move?</option>
+      <option value="asap">ASAP</option>
+      <option value="1-3">1–3 Months</option>
+      <option value="6+">6+ Months</option>
+    </select>
+
+    <select name="interest" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white">
+      <option value="">How interested are you?</option>
+      <option value="low">Just browsing</option>
+      <option value="medium">Somewhat interested</option>
+      <option value="high">Very interested</option>
+    </select>
+
+    <select name="credit" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white">
+      <option value="">What's your credit score like?</option>
+      <option value="poor">Below 580</option>
+      <option value="fair">580–669</option>
+      <option value="good">670–739</option>
+      <option value="excellent">740+</option>
+    </select>
+
+    <select name="downpayment" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white">
+      <option value="">Estimated down payment?</option>
+      <option value="none">None</option>
+      <option value="under_10">Under 10%</option>
+      <option value="10-20">10%–20%</option>
+      <option value="20+">20% or more</option>
+    </select>
+
+    <select name="property" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white">
+      <option value="">What type of property are you looking for?</option>
+      <option value="house">Single Family Home</option>
+      <option value="condo">Condo / Townhouse</option>
+      <option value="multi">Multi-Family</option>
+      <option value="land">Land / Lot</option>
+    </select>
+
+    <select name="agent" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white">
+      <option value="">Are you working with an agent?</option>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+
+    <textarea name="notes" rows="3" placeholder="Anything else we should know?" class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white"></textarea>
+
+    <button type="submit" class="bg-yellow-500 text-black px-4 py-2 rounded hover:bg-yellow-600 font-semibold">Submit</button>
+
+    <!-- Spinner -->
+    <div id="spinner" class="hidden flex items-center mt-2">
+      <svg class="animate-spin h-5 w-5 mr-2 text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
+      </svg>
+      <span class="text-yellow-300">Submitting... Please wait</span>
+    </div>
+
+    <!-- Status Message -->
+    <p id="statusMessage" class="mt-2 text-sm font-semibold"></p>
+  </form>
+
+  <script>
+    const form = document.getElementById('leadForm');
+    const statusMessage = document.getElementById('statusMessage');
+    const spinner = document.getElementById('spinner');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      // Show spinner
+      spinner.classList.remove('hidden');
+      statusMessage.textContent = "";
+      statusMessage.className = "mt-2 text-sm font-semibold";
+
+      const data = Object.fromEntries(new FormData(form).entries());
+
+      try {
+        const response = await fetch('http://127.0.0.1:8000/submit', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(data)
+        });
+
+        spinner.classList.add('hidden');
+
+        if (response.ok) {
+          statusMessage.textContent = "✅ Submitted successfully!";
+          statusMessage.classList.add('text-green-400');
+          form.reset();
+        } else {
+          throw new Error('Submission failed');
+        }
+      } catch (err) {
+        spinner.classList.add('hidden');
+        statusMessage.textContent = "❌ Submission failed. Please try again.";
+        statusMessage.classList.add('text-red-400');
+      }
+    });
+  </script>
+</body>
+</html>
