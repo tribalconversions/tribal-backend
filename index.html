@@ -65,6 +65,41 @@
       <option value="no">No</option>
     </select>
 
+    <!-- 🔥 NEW FIELDS START HERE -->
+
+    <input type="text" name="zip" placeholder="What ZIP code are you looking in?" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white" />
+
+    <select name="living_in_property" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white">
+      <option value="">Do you currently live in the property?</option>
+      <option value="yes">Yes</option>
+      <option value="no">No</option>
+    </select>
+
+    <select name="ownership" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white">
+      <option value="">Are you the owner or referring someone?</option>
+      <option value="owner">I'm the decision-maker</option>
+      <option value="referrer">Referring for someone else</option>
+    </select>
+
+    <select name="condition" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white">
+      <option value="">What’s the property condition?</option>
+      <option value="excellent">Excellent / Like New</option>
+      <option value="good">Good</option>
+      <option value="fair">Needs some work</option>
+      <option value="poor">Major repairs needed</option>
+    </select>
+
+    <select name="motivation" required class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white">
+      <option value="">What’s your motivation?</option>
+      <option value="relocating">Relocating</option>
+      <option value="investing">Investment opportunity</option>
+      <option value="downsizing">Downsizing / Lifestyle change</option>
+      <option value="divorce">Divorce / Family change</option>
+      <option value="just_looking">Just looking / Not sure yet</option>
+    </select>
+
+    <!-- 🔥 NEW FIELDS END -->
+
     <textarea name="notes" rows="3" placeholder="Anything else we should know?" class="w-full border border-yellow-400 p-2 rounded bg-gray-800 text-white"></textarea>
 
     <button type="submit" class="bg-yellow-500 text-black px-4 py-2 rounded hover:bg-yellow-600 font-semibold">Submit</button>
@@ -90,7 +125,6 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      // Show spinner
       spinner.classList.remove('hidden');
       statusMessage.textContent = "";
       statusMessage.className = "mt-2 text-sm font-semibold";

@@ -2,165 +2,137 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>TRIBAL Admin Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tribal Conversions - Lead Dashboard</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-<body class="bg-gray-900 text-white p-6 font-sans">
+<body class="bg-gray-100 text-gray-800 p-6">
+  <div class="max-w-7xl mx-auto">
+    <h1 class="text-3xl font-bold mb-6">📋 Tribal Conversions - Lead Dashboard</h1>
 
-  <h1 class="text-3xl font-bold mb-6">📊 TRIBAL Lead Dashboard</h1>
-
-  <!-- Filters -->
-  <div class="flex flex-col sm:flex-row gap-4 mb-6">
-    <input id="searchInput" type="text" placeholder="Search by name/email/phone" class="px-4 py-2 rounded bg-gray-800 text-white border border-gray-600 w-full sm:w-1/2" />
-    <input id="minScoreInput" type="number" placeholder="Min Score" class="px-4 py-2 rounded bg-gray-800 text-white border border-gray-600 w-full sm:w-1/4" />
-    <div class="flex gap-2">
-      <button onclick="loadLeads()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white font-semibold">Apply</button>
-      <button onclick="exportCSV()" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-white font-semibold">Export CSV</button>
+    <!-- Existing Lead Table -->
+    <div class="overflow-x-auto bg-white rounded shadow p-4">
+      <table class="min-w-full divide-y divide-gray-200 text-sm">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-4 py-2 text-left">Name</th>
+            <th class="px-4 py-2 text-left">Email</th>
+            <th class="px-4 py-2 text-left">Phone</th>
+            <th class="px-4 py-2 text-left">Score</th>
+            <th class="px-4 py-2 text-left">Budget</th>
+            <th class="px-4 py-2 text-left">Timeline</th>
+            <th class="px-4 py-2 text-left">Interest</th>
+            <th class="px-4 py-2 text-left">Agent</th>
+          </tr>
+        </thead>
+        <tbody id="lead-table-body" class="divide-y divide-gray-100">
+          <!-- Filled via JS -->
+        </tbody>
+      </table>
     </div>
-  </div>
 
-  <!-- Lead Table -->
-  <div class="overflow-auto rounded-lg shadow-lg">
-    <table class="min-w-full bg-gray-800 text-sm text-left">
-      <thead class="bg-gray-700 uppercase text-gray-300">
-        <tr>
-          <th class="px-4 py-3 cursor-pointer" onclick="sortTable('name')">Name</th>
-          <th class="px-4 py-3 cursor-pointer" onclick="sortTable('email')">Email</th>
-          <th class="px-4 py-3 cursor-pointer" onclick="sortTable('phone')">Phone</th>
-          <th class="px-4 py-3">Budget</th>
-          <th class="px-4 py-3">Timeline</th>
-          <th class="px-4 py-3">Interest</th>
-          <th class="px-4 py-3 cursor-pointer" onclick="sortTable('score')">Score</th>
-          <th class="px-4 py-3">Date</th>
-        </tr>
-      </thead>
-      <tbody id="leadsTableBody" class="text-gray-100">
-        <!-- Leads will be injected here -->
-      </tbody>
-    </table>
+    <!-- 📊 Analytics Section -->
+    <section class="mt-10 bg-white p-6 rounded-lg shadow-md">
+      <h2 class="text-2xl font-bold mb-4">📊 Lead Analytics</h2>
+      <div id="analytics-summary" class="grid grid-cols-1 sm:grid-cols-3 gap-6 text-center mb-6">
+        <div>
+          <p class="text-gray-600">Total Leads</p>
+          <p id="total-leads" class="text-2xl font-semibold">--</p>
+        </div>
+        <div>
+          <p class="text-gray-600">Average Score</p>
+          <p id="avg-score" class="text-2xl font-semibold">--</p>
+        </div>
+        <div>
+          <p class="text-gray-600">Leads This Month</p>
+          <p id="leads-month" class="text-2xl font-semibold">--</p>
+        </div>
+      </div>
+
+      <canvas id="lead-chart" height="100"></canvas>
+    </section>
   </div>
 
   <script>
-    let allLeads = [];
-    let sortField = 'score';
-    let sortAsc = false;
+    const AUTH = "Basic " + btoa("Tribalconversions:FnbbG@.123");
 
-    function filterLeads(leads) {
-      const search = document.getElementById("searchInput").value.toLowerCase();
-      const minScore = parseInt(document.getElementById("minScoreInput").value || "0");
+    async function fetchLeads() {
+      const res = await fetch("http://localhost:8000/leads", {
+        headers: { Authorization: AUTH }
+      });
+      const leads = await res.json();
+      const table = document.getElementById("lead-table-body");
+      table.innerHTML = "";
 
-      return leads.filter(lead =>
-        (lead.name || "").toLowerCase().includes(search) ||
-        (lead.email || "").toLowerCase().includes(search) ||
-        (lead.phone || "").toLowerCase().includes(search)
-      ).filter(lead => lead.score >= minScore);
-    }
-
-    function sortTable(field) {
-      if (sortField === field) sortAsc = !sortAsc;
-      else {
-        sortField = field;
-        sortAsc = true;
-      }
-      renderTable();
-    }
-
-    function copyToClipboard(value) {
-      navigator.clipboard.writeText(value);
-      alert(`Copied: ${value}`);
-    }
-
-    function exportCSV() {
-      const leads = filterLeads(allLeads);
-      const rows = [
-        ["Name", "Email", "Phone", "Budget", "Timeline", "Interest", "Score", "Date"]
-      ];
       leads.forEach(lead => {
-        rows.push([
-          lead.name || "",
-          lead.email || "",
-          lead.phone || "",
-          lead.budget || "",
-          lead.timeline || "",
-          lead.interest || "",
-          lead.score,
-          new Date(lead.timestamp).toLocaleString()
-        ]);
-      });
-      const csvContent = rows.map(e => e.map(v => `"${v}"`).join(",")).join("\n");
-      const blob = new Blob([csvContent], { type: 'text/csv' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'leads.csv';
-      a.click();
-      URL.revokeObjectURL(url);
-    }
-
-    function renderTable() {
-      const tbody = document.getElementById('leadsTableBody');
-      tbody.innerHTML = "";
-
-      const filtered = filterLeads(allLeads);
-      const sorted = filtered.sort((a, b) => {
-        if (sortAsc) return (a[sortField] || "").toString().localeCompare((b[sortField] || "").toString(), undefined, { numeric: true });
-        return (b[sortField] || "").toString().localeCompare((a[sortField] || "").toString(), undefined, { numeric: true });
-      });
-
-      sorted.forEach((lead, index) => {
-        let scoreColor = 'text-white';
-        if (lead.score >= 100) scoreColor = 'text-green-400 font-bold';
-        else if (lead.score >= 70) scoreColor = 'text-yellow-400';
-        else scoreColor = 'text-red-400';
-
-        const row = document.createElement('tr');
-        row.classList.add("cursor-pointer", "hover:bg-gray-700");
-
+        const row = document.createElement("tr");
         row.innerHTML = `
-          <td class="px-4 py-2">${lead.name || ""}</td>
-          <td class="px-4 py-2">
-            ${lead.email || ""}
-            <button onclick="event.stopPropagation(); copyToClipboard('${lead.email || ""}')" class="ml-2 text-blue-400 hover:text-blue-200">📋</button>
-            <a href="mailto:${lead.email}" onclick="event.stopPropagation();" class="ml-2 text-blue-500 underline">✉️</a>
-          </td>
-          <td class="px-4 py-2">
-            ${lead.phone || ""}
-            <button onclick="event.stopPropagation(); copyToClipboard('${lead.phone || ""}')" class="ml-2 text-blue-400 hover:text-blue-200">📋</button>
-            <a href="sms:${lead.phone}" onclick="event.stopPropagation();" class="ml-2 text-blue-500 underline">📱</a>
-          </td>
-          <td class="px-4 py-2">${lead.budget || ""}</td>
-          <td class="px-4 py-2">${lead.timeline || ""}</td>
-          <td class="px-4 py-2">${lead.interest || ""}</td>
-          <td class="px-4 py-2 ${scoreColor}">${lead.score}</td>
-          <td class="px-4 py-2 text-gray-400">${new Date(lead.timestamp).toLocaleString()}</td>
+          <td class="px-4 py-2">${lead.name}</td>
+          <td class="px-4 py-2">${lead.email}</td>
+          <td class="px-4 py-2">${lead.phone}</td>
+          <td class="px-4 py-2 font-bold">${lead.score}</td>
+          <td class="px-4 py-2">${lead.budget}</td>
+          <td class="px-4 py-2">${lead.timeline}</td>
+          <td class="px-4 py-2">${lead.interest}</td>
+          <td class="px-4 py-2">${lead.has_agent}</td>
         `;
-
-        row.addEventListener('click', () => {
-          alert(`
-Name: ${lead.name}
-Email: ${lead.email}
-Phone: ${lead.phone}
-Budget: ${lead.budget}
-Timeline: ${lead.timeline}
-Interest: ${lead.interest}
-Score: ${lead.score}
-Submitted: ${new Date(lead.timestamp).toLocaleString()}
-
-${lead.message ? "AI Message:\n" + lead.message : ""}
-          `.trim());
-        });
-
-        tbody.appendChild(row);
+        table.appendChild(row);
       });
     }
 
-    async function loadLeads() {
-      const res = await fetch('http://127.0.0.1:8000/leads');
-      allLeads = await res.json();
-      renderTable();
+    async function fetchAnalytics() {
+      const summary = await fetch("http://localhost:8000/analytics/summary", {
+        headers: { Authorization: AUTH }
+      }).then(res => res.json());
+
+      document.getElementById("total-leads").innerText = summary.total_leads;
+      document.getElementById("avg-score").innerText = summary.average_score;
+      document.getElementById("leads-month").innerText = summary.leads_this_month;
+
+      const timeline = await fetch("http://localhost:8000/analytics/timeline", {
+        headers: { Authorization: AUTH }
+      }).then(res => res.json());
+
+      const dates = timeline.map(t => t.date);
+      const counts = timeline.map(t => t.count);
+
+      new Chart(document.getElementById("lead-chart"), {
+        type: "line",
+        data: {
+          labels: dates,
+          datasets: [{
+            label: "Leads per Day",
+            data: counts,
+            borderColor: "#4F46E5",
+            backgroundColor: "rgba(79,70,229,0.1)",
+            fill: true,
+            tension: 0.3,
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              display: true,
+              labels: { color: "#374151" }
+            }
+          },
+          scales: {
+            x: {
+              ticks: { color: "#6B7280" }
+            },
+            y: {
+              beginAtZero: true,
+              ticks: { color: "#6B7280" }
+            }
+          }
+        }
+      });
     }
 
-    loadLeads();
+    fetchLeads();
+    fetchAnalytics();
   </script>
 </body>
 </html>
