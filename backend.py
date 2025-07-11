@@ -343,3 +343,26 @@ def analytics_timeline(credentials: HTTPBasicCredentials = Depends(authenticate)
         {"date": date, "count": count}
         for date, count in sorted(timeline.items(), reverse=True)[:30][::-1]
     ])
+# ✅ License Verification API (Simple in-memory for now)
+from pydantic import BaseModel
+
+# Store license keys in memory for now (migrate to DB later)
+licenses = {
+    "client_abc": "LICENSE123",
+    "client_xyz": "LICENSE456",
+}
+
+class LicenseCheckRequest(BaseModel):
+    client_id: str
+    license_key: str
+
+@app.post("/verify-license")
+async def verify_license(data: LicenseCheckRequest):
+    expected_key = licenses.get(data.client_id)
+    if expected_key and expected_key == data.license_key:
+        return {"status": "valid"}
+    else:
+        return {"status": "invalid"}
+
+from license_server import app as license_app
+app.mount("/license", license_app)
